@@ -8,5 +8,7 @@ int main(int argc, char const *argv[]) {
 
   int * i = malloc(ALLOCATED_SIZE);
 
+  printf(" %x \n", &i );
+  
   return 0;
 }
