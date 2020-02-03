@@ -2,6 +2,10 @@
 #define MY_MALLOC_H
 
 #include <stdio.h>
+#include <malloc.h>
 
-void my_malloc();
+
+void* my_malloc(const size_t size);
+
+#define malloc my_malloc
 #endif
