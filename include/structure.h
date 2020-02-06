@@ -2,22 +2,27 @@
 #define STRUCTURE_H
 
 #ifndef CONST
-#define BLOCK_MIN_SIZE 4096;
+#define BLOCK_MIN_SIZE 4096
 #endif
 
-typedef struct chunk{
+struct chunk{
+  int index;
   char status;
   void * adr;
   size_t size;
-  chunk * next;
-  chunk * previous;
-} chunk;
+  struct chunk * next;
+  struct chunk * previous;
+};
+typedef struct chunk chunk;
 
-typedef struct block{
+struct block{
+  int index;
   void * adr;
   size_t size;
   chunk * chunk_list;
-  block * next;
-} block;
+  struct block * next;
+};
+
+typedef struct block block;
 
 #endif

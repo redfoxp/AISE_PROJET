@@ -6,9 +6,9 @@
 
 int main(int argc, char const *argv[]) {
 
-  int * i = malloc(ALLOCATED_SIZE);
+  int * i = my_malloc(ALLOCATED_SIZE);
 
   printf(" %x \n", &i );
-  
+
   return 0;
 }

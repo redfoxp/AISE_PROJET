@@ -10,7 +10,7 @@ INCLUDE := -I include
 LIB := -L lib
 
 ERROR_CFLAGS = -Wall
-OPTI_FLAG = -Ofast
+OPTI_FLAG = -O2
 
 CFLAGS = $(ERROR_FLAGS) $(OPTI_FLAG)
 
