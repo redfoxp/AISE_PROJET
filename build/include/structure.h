@@ -15,6 +15,7 @@ typedef struct chunk chunk;
 
 struct block{
   size_t size;
+  size_t free_size;
   size_t chunk_nbr;
   chunk * chunk_list;
   struct block * next;

@@ -1,7 +1,6 @@
 #include "my_malloc.h"
 
 block * Basic_block = NULL;
-int BLOCK_NBR = 0;
 
 void* my_malloc(const size_t size) {
 
@@ -19,26 +18,21 @@ if (Basic_block == NULL) {
     printf("mmap allocate error \n");
     return NULL;
     }
-    ++BLOCK_NBR;
-
     Basic_block->size = BLOCK_MIN_SIZE;
-    Basic_block->chunk_list = mmap(0 ,sizeof(chunk),
-                                   PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANON, -1, 0);
-    //chunk_list_tmp = Basic_block->chunk_list;
+    Basic_block->free_size = BLOCK_MIN_SIZE - size - sizeof(block)- 2* sizeof(chunk);
     Basic_block->next = NULL;
     Basic_block->chunk_nbr = 1;
 
+    printf("debug \n");
+    Basic_block->chunk_list = (chunk*)Basic_block + (sizeof(block));
     Basic_block->chunk_list->status = 1;
     ptr = &Basic_block->chunk_list;
     Basic_block->chunk_list->size = size ;
     Basic_block->chunk_list->previous = NULL;
 
-    chunk * new_chunk = mmap(0 ,sizeof(chunk),
-                             PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANON, -1, 0);
+    chunk * new_chunk = Basic_block->chunk_list+ sizeof(chunk)+ size;
 
-
-    printf("first chunk : %p \n", &Basic_block->chunk_list);
-    printf("next before : %p \n", Basic_block->chunk_list->next);
+    printf("first chunk  : %p \n", &Basic_block->chunk_list);
 
     Basic_block->chunk_list->next = new_chunk;
     new_chunk->status = 0;
@@ -46,48 +40,22 @@ if (Basic_block == NULL) {
     new_chunk->previous =  Basic_block->chunk_list;
     new_chunk->next = NULL;
 
-    printf("next after  : %p \n", Basic_block->chunk_list->next);
+    printf("second chunk : %p \n", Basic_block->chunk_list->next);
+    printf("size libre  : %ld\n",Basic_block->chunk_list->next->size );
   }
 }
 else {
-  /*
-  block * tmp_Basic_block = Basic_block;
-  chunk * tmp_chunk_list = Basic_block->chunk_list;
+  printf("Not empty \n");
+  block * Block_ptr = Basic_block;
 
-  printf("Block not empty\n");
-  printf("DISPONIBLE : \n");
-  while(Basic_block->next != NULL){
-    while(Basic_block->chunk_list->next != NULL){
-       //gap_search(ptr, Basic_block, tmp_Basic_block, tmp_chunk_list, size);
-       Basic_block->chunk_list += sizeof(chunk);
-    }
-    //gap_search(ptr, Basic_block, tmp_Basic_block, tmp_chunk_list, size);
-
-    Basic_block->chunk_list += sizeof(chunk);
-    Basic_block += sizeof(block);
+  while (Block_ptr != NULL) {
+    printf("dans %p  \n", &Block_ptr);
+    Block_ptr = Block_ptr->next;
   }
 
-
-
-  //DERNIER BLOCK
-  while(Basic_block->chunk_list->next != NULL){
-    //gap_search(ptr, Basic_block, tmp_Basic_block, tmp_chunk_list, size);
-    Basic_block->chunk_list += sizeof(chunk);
- }
-
- if (Basic_block->chunk_list->next == NULL) {
-   printf("chunk list null \n");
- }
- printf("debug\n");
-
-
-  //DERNIER CHUNK DU DERNIER BLOCK
-  //gap_search(ptr, Basic_block, tmp_Basic_block, tmp_chunk_list, size);
-
-  //Basic_block = tmp_Basic_block;
-  //Basic_block->chunk_list = tmp_chunk_list;
-  */
+  printf("end else\n");
 }
+printf("end \n");
 
 return ptr;
 }

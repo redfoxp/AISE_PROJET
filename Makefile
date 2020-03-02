@@ -16,7 +16,7 @@ OPTI_FLAG = -O2
 
 CFLAGS = $(ERROR_FLAGS) $(OPTI_FLAG)
 
-all: clean lib test
+all: clean lib test run
 
 run :
 	LD_LIBRARY_PATH=$(BUILDLIBDIR) $(BUILDTESTDIR)/test
@@ -39,6 +39,6 @@ atom:
 
 clean:
 	@echo " Cleaning...";
-	@echo " $(RM) -r $(BUILDDIR) $(TARGET)"; $(RM) -r $(BUILDLIBDIR) $(BUILDTESTDIR)
+	@echo " $(RM) -Rf $(BUILDLIBDIR) $(BUILDTESTDIR) "; $(RM) -Rf $(BUILDLIBDIR) $(BUILDTESTDIR)
 
 .PHONY: clean

@@ -14,6 +14,14 @@ int main(int argc, char const *argv[]) {
     printf("ptr[%d] : %d \n",i,ptr[i]);
   }
 
+  int * ptr2 = my_malloc(ALLOCATED_SIZE);
+  //int * ptr3 = my_malloc(ALLOCATED_SIZE);
+/*
+  for (int i = 0; i < ALLOCATED_SIZE; i++) {
+    ptr2[i] = 22;
+    printf("ptr[%d] : %d \n",i,ptr2[i]);
+  }
+*/
 
   return 0;
 }
