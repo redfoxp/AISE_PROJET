@@ -6,9 +6,19 @@
 
 int main(int argc, char const *argv[]) {
 
-  int * i = my_malloc(ALLOCATED_SIZE);
+  int * ptr = my_malloc(ALLOCATED_SIZE * sizeof(int));
 
-  printf(" %x \n", &i );
+  printf("\n%p \n", &ptr );
+
+  for (int i = 0; i < ALLOCATED_SIZE; i++) {
+    ptr[i] = 23;
+    printf(" ptr[%d] : %d \n",i, ptr[i]);
+  }
+
+  int * ptr2 = my_malloc(ALLOCATED_SIZE * sizeof(int));
+  //int * ptr3 = my_malloc(ALLOCATED_SIZE * sizeof(int));
+  //int * ptr4 = my_malloc(ALLOCATED_SIZE * sizeof(int));
+  //printf(" %x \n", &ptr2 );
 
   return 0;
 }

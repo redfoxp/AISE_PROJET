@@ -6,9 +6,7 @@
 #endif
 
 struct chunk{
-  int index;
-  char status;
-  void * adr;
+  int status;
   size_t size;
   struct chunk * next;
   struct chunk * previous;
@@ -16,9 +14,8 @@ struct chunk{
 typedef struct chunk chunk;
 
 struct block{
-  int index;
-  void * adr;
   size_t size;
+  size_t chunk_nbr;
   chunk * chunk_list;
   struct block * next;
 };
