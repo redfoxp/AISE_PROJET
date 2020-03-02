@@ -1,42 +1,21 @@
 CC = gcc
-TARGET := bin/main
-SRCDIR := src
-BUILDDIR := build
+AR = ar
 
-SRCEXT := c
-SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
-OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
-INCLUDE := -I include
-LIB := -L lib
+all :
 
-ERROR_CFLAGS = -Wall
-OPTI_FLAG = -Ofast
+setup :
+	mkdir -p ./build/lib
+	mkdir -p ./build/include
+	cp -r include ./build/
 
-CFLAGS = $(ERROR_FLAGS) $(OPTI_FLAG)
+lib : setup lib/my_malloc.c
+	$(CC) -c -fPIC -o build/lib/my_malloc.o lib/my_malloc.c
+	$(CC) -shared -o build/lib/libmy_malloc.so build/lib/my_malloc.o
+	$(AR) rcs build/lib/libmy_malloc.a build/lib/my_malloc.o
 
-$(TARGET): $(OBJECTS)
-	@echo " Linking..."
-	@echo " $(CC) $^ -o $(TARGET)"; $(CC) $^ -o $(TARGET) $(LIB) $(INCLUDE)
+test : setup main.c lib
+	$(CC) -I./build/include	-L./build/lib/ main.c -lmy_malloc -o build/test
+	LD_LIBRARY_PATH=./build/lib ./build/test
 
-$(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
-	@mkdir -p $(BUILDDIR)
-	@echo " $(CC) $(CFLAGS) -c -o $@ $<"; $(CC) $(CFLAGS) $(LIB) $(INCLUDE) -c -o $@ $<
-	@echo " $(CC) $^ -o $(TARGET)"; $(CC) $^ -o $(TARGET) $(LIB) $(INCLUDE)
-
-$(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
-	@mkdir -p $(BUILDDIR)
-	@echo " $(CC) $(CFLAGS) -c -o $@ $<"; $(CC) $(CFLAGS) $(LIB) $(INCLUDE) -c -o $@ $<
-
-run:
-	rm -Rf out.txt
-	./$(TARGET)
-
-atom:
-	atom ./src/*.$(SRCEXT)
-	atom ./include/*.h
-
-clean:
-	@echo " Cleaning...";
-	@echo " $(RM) -r $(BUILDDIR) $(TARGET)"; $(RM) -r $(BUILDDIR) $(TARGET)
-
-.PHONY: clean
+clean :
+	rm -rf build/* 
