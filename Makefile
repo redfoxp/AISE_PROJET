@@ -1,42 +1,44 @@
 CC = gcc
-TARGET := bin/main
-SRCDIR := src
-BUILDDIR := build
+AR = ar
+LIBNAME := my_malloc
+LIBSRCDIR := ./src/lib
+TEST := ./src/test/test.c
+BUILDTESTDIR := ./build/test
+BUILDLIBDIR := ./build/lib
+
 
 SRCEXT := c
-SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
-OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
-INCLUDE := -I include
-LIB := -L lib
+INCLUDE := -I ./include
+LIB := -L ./build/lib
 
 ERROR_CFLAGS = -Wall
 OPTI_FLAG = -O2
 
 CFLAGS = $(ERROR_FLAGS) $(OPTI_FLAG)
 
-$(TARGET): $(OBJECTS)
-	@echo " Linking..."
-	@echo " $(CC) $^ -o $(TARGET)"; $(CC) $^ -o $(TARGET) $(LIB) $(INCLUDE)
+all: clean lib test
 
-$(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
-	@mkdir -p $(BUILDDIR)
-	@echo " $(CC) $(CFLAGS) -c -o $@ $<"; $(CC) $(CFLAGS) $(LIB) $(INCLUDE) -c -o $@ $<
-	@echo " $(CC) $^ -o $(TARGET)"; $(CC) $^ -o $(TARGET) $(LIB) $(INCLUDE)
+run :
+	LD_LIBRARY_PATH=$(BUILDLIBDIR) $(BUILDTESTDIR)/test
 
-$(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
-	@mkdir -p $(BUILDDIR)
-	@echo " $(CC) $(CFLAGS) -c -o $@ $<"; $(CC) $(CFLAGS) $(LIB) $(INCLUDE) -c -o $@ $<
+lib : $(LIBSRCDIR)/$(LIBNAME).$(SRCEXT)
+	cp -r include ./build/
+	mkdir -p $(BUILDLIBDIR)
+	$(CC) -c -fPIC $(CFLAGS) $(INCLUDE) -o $(BUILDLIBDIR)/$(LIBNAME).o $(LIBSRCDIR)/$(LIBNAME).$(SRCEXT)
+	$(CC) -shared -o $(BUILDLIBDIR)/libmy_malloc.so $(BUILDLIBDIR)/my_malloc.o
+	$(AR) rcs $(BUILDLIBDIR)/libmy_malloc.a $(BUILDLIBDIR)/my_malloc.o
 
-run:
-	rm -Rf out.txt
-	./$(TARGET)
+test : lib
+	mkdir -p $(BUILDTESTDIR)
+	$(CC) $(INCLUDE) $(LIB) $(CFLAGS) $(TEST) -lmy_malloc -o $(BUILDTESTDIR)/test
+	LD_LIBRARY_PATH=$(BUILDLIBDIR)
 
 atom:
-	atom ./src/*.$(SRCEXT)
-	atom ./include/*.h
+	atom $(LIBSRCDIR)/$(LIBNAME).$(SRCEXT)	$(TEST)
+	atom include/*.h
 
 clean:
 	@echo " Cleaning...";
-	@echo " $(RM) -r $(BUILDDIR) $(TARGET)"; $(RM) -r $(BUILDDIR) $(TARGET)
+	@echo " $(RM) -r $(BUILDDIR) $(TARGET)"; $(RM) -r $(BUILDLIBDIR) $(BUILDTESTDIR)
 
 .PHONY: clean
