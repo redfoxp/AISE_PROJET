@@ -2,26 +2,25 @@
 #include "my_malloc.h"
 
 #ifndef ALLOCATED_SIZE
-#define ALLOCATED_SIZE  10
+#define ALLOCATED_SIZE  100000
 #endif
 
 int main(int argc, char const *argv[]) {
 
 
-  int * ptr = my_malloc(ALLOCATED_SIZE);
+  int * ptr = my_malloc(sizeof(int)* ALLOCATED_SIZE);
+  printf("ptr 1   : %zu \n", ptr);
   for (int i = 0; i < ALLOCATED_SIZE; i++) {
-    ptr[i] = 23;
-    printf("ptr[%d] : %d \n",i,ptr[i]);
+    ptr[i] = 21;
+    //printf("ptr[%d] : %d \n",i,ptr[i]);
   }
+  printf("succes \n");
 
-  int * ptr2 = my_malloc(ALLOCATED_SIZE);
-  //int * ptr3 = my_malloc(ALLOCATED_SIZE);
-/*
-  for (int i = 0; i < ALLOCATED_SIZE; i++) {
-    ptr2[i] = 22;
-    printf("ptr[%d] : %d \n",i,ptr2[i]);
-  }
-*/
+  int * ptr2 = my_malloc(sizeof(int) * ALLOCATED_SIZE);
+  int * ptr3 = my_malloc(sizeof(int) * ALLOCATED_SIZE);
+  int * ptr4 = my_malloc(sizeof(int) * ALLOCATED_SIZE);
+  int * ptr5 = my_malloc(sizeof(int) * ALLOCATED_SIZE);
+  //printf("ptr 2   : %zu \n", ptr2);
 
   return 0;
 }

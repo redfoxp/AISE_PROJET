@@ -12,7 +12,7 @@ INCLUDE := -I ./include
 LIB := -L ./build/lib
 
 ERROR_CFLAGS = -Wall
-OPTI_FLAG = -O2
+OPTI_FLAG = -O0
 
 CFLAGS = $(ERROR_FLAGS) $(OPTI_FLAG)
 
