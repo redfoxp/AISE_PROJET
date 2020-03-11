@@ -9,10 +9,11 @@
 struct chunk_t{
   int status;
   struct block_t * block;
-  struct free_chunk_t * free_list_ptr;
   size_t size;
   struct chunk_t * previous;
   struct chunk_t * next;
+  struct chunk_t * next_free;
+  struct chunk_t * previous_free;
 };
 typedef struct chunk_t chunk_t;
 
@@ -24,11 +25,5 @@ struct block_t{
 };
 typedef struct block_t block_t;
 
-struct free_chunk_t {
-  chunk_t * chunk;
-  struct free_chunk_t * previous;
-  struct free_chunk_t * next;
-};
-typedef struct free_chunk_t free_chunk_t;
 
 #endif

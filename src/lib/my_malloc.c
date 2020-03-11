@@ -1,31 +1,23 @@
 #include "my_malloc.h"
 
 block_t * Basic_block;
-free_chunk_t * free_list;
+chunk_t * free_list;
 
 void* my_malloc(const size_t size) {
-
   void * ptr = NULL;
   printf("\nMalloc : Asked for %ld bytes\n\n", size);
 
-  if (Basic_block == NULL) {
-//IF FIRST ALLOCATION -----------------------------------------------
-    ptr = first_alloc(size);
-    printf("first_alloc \n");
-  }
-  else {
 //RESEARCH FOR NEEDED CHUNK -----------------------------------------
-
     chunk_t * new_chunk = NULL;
-    new_chunk = research_chunk(size);
+    new_chunk = research_free_chunk(size);
     if (new_chunk) {
+      printf("place found \n");
       ptr = lists_update(new_chunk,size);
     }
     else
     {
       ptr = new_block_creation(size);
     }
-  }
 
 //PRINTS ------------------------------------------------------------
 status_print();
@@ -34,227 +26,168 @@ printf("pointer %zu \n", ptr);
 return ptr;
 }
 
-//FUNCTION FOR FIRST ALLOCATION -------------------------------------
-
-void * first_alloc(int size)
-{
-  void * ptr = NULL;
-  size_t allocating_size = 0;
-  printf("First allocation\n");
-  if (size <= BLOCK_MIN_SIZE ) {
-    allocating_size = BLOCK_MIN_SIZE;
-  }
-
-  else
-  {
-    allocating_size = size + ADDITIONAL_SIZE ;
-  }
-
-//ALLOCATION OF BLOCK_LIST --------------------------------------
-
-  void * adr = mmap(0, allocating_size + sizeof(block_t)+sizeof(chunk_t),
-                    PROT_WRITE | PROT_READ,
-                    MAP_PRIVATE | MAP_ANONYMOUS,
-                    -1, 0);
-
-
-  Basic_block = adr;
-
-  if (adr == MAP_FAILED)
-  {
-  printf("mmap allocate error \n");
-  return NULL;
-  }
-
-  Basic_block->size = allocating_size + sizeof(block_t) + sizeof(chunk_t);
-  Basic_block->next = NULL;
-  Basic_block->previous = NULL;
-  Basic_block->chunk_list = adr + sizeof(block_t);
-  Basic_block->chunk_list->block = Basic_block;
-  Basic_block->chunk_list->status = 1;
-  ptr = (void*)Basic_block->chunk_list + sizeof(chunk_t);
-  Basic_block->chunk_list->size = size ;
-  Basic_block->chunk_list->free_list_ptr = NULL;
-  Basic_block->chunk_list->previous = NULL;
-
-//CREATION OF FREE CHUNK ----------------------------------------
-
-  if (allocating_size == BLOCK_MIN_SIZE &&
-      allocating_size - size  > sizeof(block_t) + sizeof(chunk_t) ) {
-
-  chunk_t * new_chunk = adr + (sizeof(block_t)) + sizeof(chunk_t)+ size;
-
-  new_chunk->status = 0;
-  new_chunk->block = Basic_block;
-  new_chunk->size = allocating_size - size - sizeof(block_t)
-                    - sizeof(chunk_t) ;
-  new_chunk->previous =  Basic_block->chunk_list;
-  new_chunk->next = NULL;
-
-  Basic_block->chunk_list->next = new_chunk;
-  Basic_block->chunk_list->next->previous = Basic_block->chunk_list;
-
-
-
-//CREATION OF FREE CHUNK LIST CHUNK -----------------------------
-
-  void * free_list_adr = mmap(0, sizeof(free_chunk_t),
-                              PROT_WRITE | PROT_READ,
-                              MAP_PRIVATE | MAP_ANONYMOUS,
-                              -1, 0);
-  free_list = free_list_adr;
-  free_list->chunk = Basic_block->chunk_list->next;
-  new_chunk->free_list_ptr = free_list;
-  free_list->previous = NULL;
-  free_list->next = NULL;
-}
-else
-{
-  Basic_block->chunk_list->next = NULL;
-}
-  return ptr;
-}
-
 //FUNCTION FOR RESEARCH CHUNK ---------------------------------------
 
-chunk_t * research_chunk(int size)
+chunk_t * research_free_chunk(int size)
 {
-  printf("\nResearch  :\n");
-  free_chunk_t * free_list_tmp = free_list;
+  chunk_t * tmp_chunk = free_list;
 
-  while (free_list_tmp != NULL) {
-    if (free_list_tmp->chunk->size >= size) {
-      printf("good\n");
-      return free_list_tmp->chunk;
+  while (tmp_chunk) {
+    if (tmp_chunk->size >= size && tmp_chunk->status == 0) {
+      return tmp_chunk;
     }
-      free_list_tmp = free_list_tmp->next;
+    tmp_chunk = tmp_chunk->next_free;
   }
 
-  if (free_list_tmp != NULL) {
-    printf("Succes research\n");
-    return free_list_tmp->chunk;
-  }
-  else
-  {
-    printf("Failed research\n");
-    return NULL;
-
-  }
+  return NULL;
 }
-
-//FUNCTION INSERTION FREE_CHUNK -------------------------------
-
 
 
 //LISTS UPDATE ------------------------------------------------
 void * lists_update(chunk_t * chunk, size_t size)
 {
   void * ptr = NULL;
-  if (chunk != NULL) {
+  chunk_t * new_chunk = NULL;
+
     size_t old_size = chunk->size;
-    chunk->status = 1;
     chunk->size = size;
-    chunk_t * new_chunk = (void*)chunk + size + sizeof(chunk_t);
-    new_chunk->next = chunk->next;
-    new_chunk->previous = chunk;
-    new_chunk->size = old_size - sizeof(chunk_t)- size;
-    new_chunk->status = 0;
-    new_chunk->block = chunk->block;
-    if (chunk->next) {
-      chunk->next->next->previous = new_chunk;
+    chunk->status = 1;
+    free_list_remove(chunk);
+    if (old_size > size + sizeof(chunk_t)) {
+      new_chunk = (void*)chunk +  sizeof(chunk_t) + size ;
+      new_chunk->next = chunk->next;
+      new_chunk->previous = chunk;
+      new_chunk->size = old_size - sizeof(chunk_t) - size;
+      new_chunk->status = 0;
+      new_chunk->block = chunk->block;
+      if (chunk->next) {
+        chunk->next->previous = new_chunk;
+        printf("debug \n");
+      }
+      chunk->next = new_chunk;
     }
-    chunk->next = new_chunk;
+    if (new_chunk) {
+      free_list_add(new_chunk);
+    }
     ptr = (void*)chunk + sizeof(chunk_t);
-    free_list_update(chunk,new_chunk);
 
-  }
-  else
-  {
-    printf("need new block\n");
 
-  }
   return ptr;
 }
 
-void free_list_update(chunk_t * old_chunk, chunk_t * new_chunk)
+void free_list_remove(chunk_t *  chunk)
 {
-  free_chunk_t * tmp_list;
-  if (old_chunk != NULL) {
-    tmp_list = old_chunk->free_list_ptr;
-
-    if (tmp_list->next == NULL && tmp_list->previous == NULL) {
-      free_list = NULL;
-      munmap((void*)free_list,sizeof(free_chunk_t));
-    }
-    else
-    {
-      if (tmp_list->previous) {
-        if (tmp_list->next) {
-          tmp_list->previous->next = tmp_list->next;
-          tmp_list->next->previous = tmp_list->previous;
-        }
-        else
-        {
-          tmp_list->previous->next = NULL;
-        }
-      }
-      if (tmp_list->next) {
-        if (tmp_list->previous) {
-          tmp_list->next->previous = tmp_list->previous;
-          tmp_list->previous->next = tmp_list->next;
-        }
-        else
-        {
-          tmp_list->next->previous = NULL;
-        }
-      }
-    }
-    munmap((void*)tmp_list,sizeof(free_chunk_t));
+  printf("removing  %zu  \n", chunk);
+  chunk_t * tmp_free = free_list;
+  while ((void*)tmp_free != (void*)chunk) {
+    tmp_free = tmp_free->next_free;
   }
-
-
+  if (tmp_free->next_free == NULL && tmp_free->previous_free == NULL) {
+    free_list = NULL;
+  }
+  else{
+  if (tmp_free->next_free == NULL && tmp_free->previous_free != NULL) {
+    tmp_free->previous_free->next_free = NULL;
+    chunk->previous_free = NULL;
+    chunk->next_free = NULL;
+  }
+  if (tmp_free->next_free != NULL && tmp_free->previous_free == NULL) {
+      free_list = free_list->next_free;
+      free_list->previous_free = NULL;
+      chunk->previous_free = NULL;
+      chunk->next_free = NULL;
+  }
+  if (tmp_free->next_free != NULL && tmp_free->previous_free != NULL) {
+      tmp_free->previous_free->next_free = tmp_free->next_free;
+      tmp_free->next_free->previous_free = tmp_free->previous_free;
+      chunk->previous_free = NULL;
+      chunk->next_free = NULL;
+  }
+}
+}
+void free_list_add(chunk_t *  chunk)
+{
+  chunk_t * tmp_list = free_list;
   if (free_list == NULL) {
-    void * free_list_adr = mmap(0, sizeof(free_chunk_t),
-                                PROT_WRITE | PROT_READ,
-                                MAP_PRIVATE | MAP_ANONYMOUS,
-                                -1, 0);
-    free_list = free_list_adr;
-    free_list->chunk = new_chunk;
-    new_chunk->free_list_ptr = free_list;
-    free_list->previous = NULL;
-    free_list->next = NULL;
+    printf("free_list null \n");
+    free_list = chunk;
+    chunk->next_free = NULL;
+    chunk->previous_free = NULL;
   }
   else
   {
-    tmp_list = free_list;
-    while (tmp_list->chunk->size <= new_chunk->size && tmp_list->next != NULL) {
-    tmp_list = tmp_list->next;
-    }
-    if (tmp_list->chunk->size <= new_chunk->size) {
-      void * adr = mmap(0, sizeof(free_chunk_t),
-                                  PROT_WRITE | PROT_READ,
-                                  MAP_PRIVATE | MAP_ANONYMOUS,
-                                  -1, 0);
+    int status_update = 0;
+    while (tmp_list && !status_update) {
+      if (tmp_list->next_free == NULL && tmp_list->previous_free == NULL) {
+        if (tmp_list->size > chunk->size) {
+          tmp_list->previous_free = chunk;
+          chunk->next_free = tmp_list;
+          chunk->previous_free = NULL;
+          free_list = chunk;
+          status_update = 1;
+        }
+        else
+        {
+          tmp_list->next_free = chunk;
+          chunk->previous_free = tmp_list;
+          chunk->next_free = NULL;
+          status_update = 1;
+        }
+      }
+      else if (tmp_list->next_free && tmp_list->previous_free == NULL) {
+        if (tmp_list->size >= chunk->size) {
+          tmp_list->previous_free = chunk;
+          chunk->next_free = tmp_list;
+          chunk->previous_free = NULL;
+          free_list = chunk;
+          status_update = 1;
+        }
+      }
+      else if (tmp_list->next_free == NULL && tmp_list->previous_free) {
+        if (tmp_list->size < chunk->size) {
+          tmp_list->next_free = chunk;
+          chunk->previous_free = tmp_list;
+          chunk->next_free = NULL;
+          status_update = 1;
+        }
+        else
+        {
+          chunk->previous_free = tmp_list->previous_free;
+          tmp_list->previous_free->next_free = chunk;
+          chunk->next_free = tmp_list;
+          tmp_list->previous_free = chunk;
+          status_update = 1;
+        }
+      }
+      else if (tmp_list->next_free && tmp_list->previous_free) {
+        if (tmp_list->size > chunk->size) {
+          chunk->previous_free = tmp_list->previous_free;
+          chunk->next_free = tmp_list;
+          tmp_list->previous_free->next_free = chunk;
+          tmp_list->previous_free = chunk;
+          status_update = 1;
+        }
+      }
 
-      free_chunk_t * new_elem = adr;
-      new_elem->chunk = new_chunk;
-      new_chunk->free_list_ptr = new_elem;
-      new_elem->previous = tmp_list;
-      new_elem->next = tmp_list->next;
-      tmp_list->next = new_elem;
+
+    if (!status_update) {
+      tmp_list = tmp_list->next_free;
     }
   }
-
-
 }
+}
+
 void * new_block_creation(size_t size)
 {
   void * ptr;
 
   block_t * tmp_block_prev = Basic_block;
   size_t allocating_size;
-  while (tmp_block_prev->next != NULL) {
-    tmp_block_prev = tmp_block_prev->next;
+
+  if (tmp_block_prev) {
+    while (tmp_block_prev->next != NULL) {
+      tmp_block_prev = tmp_block_prev->next;
+    }
   }
 
   if (size <= BLOCK_MIN_SIZE ) {
@@ -285,49 +218,166 @@ void * new_block_creation(size_t size)
 
     new_block->size = allocating_size + sizeof(block_t) + sizeof(chunk_t);
     new_block->next = NULL;
-    new_block->previous = tmp_block_prev;
-    tmp_block_prev->next = new_block;
+    if (tmp_block_prev) {
+      new_block->previous = tmp_block_prev;
+      tmp_block_prev->next = new_block;
+    }
+    else
+    {
+      Basic_block = new_block;
+    }
     new_block->chunk_list = adr + sizeof(block_t);
     new_block->chunk_list->block = new_block;
     new_block->chunk_list->status = 1;
     ptr = (void*)new_block->chunk_list + sizeof(chunk_t);
-    new_block->chunk_list->size = size ;
-    new_block->chunk_list->free_list_ptr = NULL;
+    new_block->chunk_list->size = size;
     new_block->chunk_list->previous = NULL;
-
-    if (allocating_size == BLOCK_MIN_SIZE &&
-        allocating_size - size  > sizeof(block_t) + sizeof(chunk_t) ) {
-
-    chunk_t * new_chunk = adr + (sizeof(block_t)) + sizeof(chunk_t) + size;
-
-    new_chunk->status = 0;
-    new_chunk->block = new_block;
-    new_chunk->size = allocating_size - size - sizeof(block_t)
-                      - sizeof(chunk_t) ;
-    new_chunk->previous =  new_block->chunk_list;
-    new_chunk->next = NULL;
-
-    new_block->chunk_list->next = new_chunk;
-    new_block->chunk_list->next->previous = new_block->chunk_list;
-
-
-    free_list_update(NULL,new_chunk);
-  }
-  else
-  {
     new_block->chunk_list->next = NULL;
-  }
 
+    if (allocating_size > size + 2 *sizeof(chunk_t) + sizeof(block_t)) {
+      chunk_t * new_chunk = (void*)new_block->chunk_list
+                            +  sizeof(chunk_t) + size ;
+      new_chunk->next = new_block->chunk_list->next;
+      new_chunk->previous = new_block->chunk_list;
+      new_block->chunk_list->next = new_chunk;
+      new_chunk->size = allocating_size - 2 * sizeof(chunk_t)
+                        - sizeof(block_t) - size;
+      new_chunk->status = 0;
+      new_chunk->block = new_block->chunk_list->block;
+      free_list_add(new_chunk);
+
+    }
 
   return ptr;
 }
 
 
+// FREE -------------------------------------------------------
 
+void my_free(void * ptr) {
+  printf("Asked to free %zu \n", ptr);
+  chunk_t * chunk = chunk_search(ptr);
+  free_chunk(chunk);
+}
+
+chunk_t * chunk_search(void * ptr)
+{
+  block_t * block = Basic_block;
+  chunk_t * chunk_list;
+  while (block) {
+    chunk_list = block->chunk_list;
+    while (chunk_list) {
+      if ((void*)chunk_list + sizeof(chunk_t) == ptr) {
+        printf("free search %zu \n", chunk_list);
+        return chunk_list;
+      }
+      chunk_list = chunk_list->next;
+    }
+    block = block->next;
+  }
+  return NULL;
+}
+
+
+void free_chunk(chunk_t * chunk)
+{
+  if (chunk == NULL) {
+    printf("Unvalid free :(\n");
+    exit(0);
+  }
+  chunk->status = 0;
+  free_chunk_fusion(chunk);
+  printf("chunk next %zu , chunk prev %zu \n", chunk->next, chunk->previous);
+  if (chunk->next == NULL && chunk->previous == NULL && chunk->status == 0) {
+    printf("block suppretion\n");
+    printf("chunk size %ld\n", chunk->size);
+    free_list_remove(chunk);
+    delete_block(chunk->block);
+  }
+  status_print();
+}
+void free_chunk_fusion(chunk_t * chunk)
+{
+  if (chunk->next) {
+    if (chunk->next->status == 0) {
+      chunk->size = chunk->size + sizeof(chunk_t) + chunk->next->size;
+      free_list_remove(chunk->next);
+      delete_chunk(chunk->next);
+    }
+  }
+  if (chunk->previous) {
+    if (chunk->previous->status == 0) {
+      chunk->size = chunk->size + sizeof(chunk_t) + chunk->previous->size;
+      free_list_remove(chunk->previous);
+      delete_chunk(chunk->previous);
+    }
+  }
+
+  free_list_add(chunk);
+
+}
+
+void delete_chunk(chunk_t * chunk)
+{
+  if (chunk->previous && chunk->next) {
+    chunk->previous->next = chunk->next;
+    chunk->next->previous = chunk->previous;
+    chunk = NULL;
+  }
+  else if (chunk->previous == NULL && chunk->next) {
+    chunk->block->chunk_list = chunk->next;
+    chunk->block->chunk_list->previous = NULL;
+    chunk = NULL;
+  }
+  else if (chunk->previous && chunk->next == NULL) {
+    chunk->previous->next = NULL;
+    chunk = NULL;
+  }
+  else if (chunk->previous == NULL && chunk->next == NULL) {
+    block_t * tmp_block = chunk->block;
+    tmp_block->chunk_list = NULL;
+  }
+}
+
+void delete_block(block_t * block)
+{
+  int delete_status = 0;
+  if (block->previous && block->next && !delete_status) {
+    block->next->previous = block->previous;
+    block->previous->next = block->next;
+    delete_status = 1;
+  }
+  if (block->previous == NULL && block->next && !delete_status) {
+    Basic_block = block->next;
+    block->next->previous = NULL;
+    delete_status = 1;
+  }
+  if (block->previous && block->next == NULL && !delete_status) {
+    block->previous->next = NULL;
+    delete_status = 1;
+  }
+  if (block->previous == NULL && block->next == NULL && !delete_status) {
+    Basic_block = NULL;
+    delete_status = 1;
+  }
+  if (delete_status) {
+    if (munmap((void*)block,sizeof(block)
+    + block->chunk_list->size) == -1 ) {
+      printf("Free error \n");
+    }
+  }
+}
+
+
+
+
+
+
+
+// PRINT ------------------------------------------------------
 void status_print()
 {
   block_t * tmp_block = Basic_block;
-  free_chunk_t * free_list_tmp = free_list;
 
   printf("\nStructure\n");
   printf("Block size : %ld \n", sizeof(block_t));
@@ -347,14 +397,14 @@ void status_print()
       }
       tmp_block = tmp_block->next;
     }
-
-    while (free_list_tmp != NULL)
-    {
-    printf("free list : block : %zu  chunk %zu size %ld \n",
-            free_list_tmp->chunk->block,
-            free_list_tmp->chunk,
-            free_list_tmp->chunk->size);
-            free_list_tmp = free_list_tmp->next;
-    }
-
+  chunk_t * tmp_free = free_list;
+  printf("\nFREE LIST \n" );
+  while (tmp_free) {
+    printf("  chunk : %zu status : %d size : %ld block %zu\n",
+              tmp_free,
+              tmp_free->status,
+              tmp_free->size,
+              tmp_free->block);
+    tmp_free = tmp_free->next_free;
+  }
 }
