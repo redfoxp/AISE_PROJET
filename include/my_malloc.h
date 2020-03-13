@@ -1,14 +1,13 @@
 #ifndef MY_MALLOC_H
 #define MY_MALLOC_H
 
-#include <stdio.h>
 #include <sys/mman.h>
-
+#include <pthread.h>
 #include "structure.h"
 
 
 // MALLOC -----------------------------------------------------
-void * my_malloc(const size_t size);
+void * malloc(const size_t size);
 
 void * first_alloc(int size);
 chunk_t * research_free_chunk(int size);
@@ -19,7 +18,7 @@ void free_list_add(chunk_t *  chunk);
 void * new_block_creation(size_t size);
 
 // FREE -------------------------------------------------------
-void   my_free(void * ptr);
+void  free(void * ptr);
 chunk_t * chunk_search(void * ptr);
 void free_chunk(chunk_t * chunk);
 void free_chunk_fusion(chunk_t * chunk);
@@ -27,10 +26,16 @@ void delete_chunk(chunk_t * chunk);
 void delete_block(block_t * block);
 
 
+//REALLOC -----------------------------------------------------
+void * realloc(void *ptr, size_t size);
 
 
+//CALLOC ------------------------------------------------------
+void * calloc(size_t nmemb, size_t size);
 // PRINT ------------------------------------------------------
 void status_print();
+void stats();
+void stats() __attribute__((destructor));
 
 
 

@@ -21,20 +21,18 @@ all: clean lib test run
 run :
 	LD_LIBRARY_PATH=$(BUILDLIBDIR) $(BUILDTESTDIR)/test
 
-lib : $(LIBSRCDIR)/$(LIBNAME).$(SRCEXT)
+lib :
 	cp -r include ./build/
 	mkdir -p $(BUILDLIBDIR)
-	$(CC) -c -fPIC $(CFLAGS) $(INCLUDE) -o $(BUILDLIBDIR)/$(LIBNAME).o $(LIBSRCDIR)/$(LIBNAME).$(SRCEXT)
-	$(CC) -shared -o $(BUILDLIBDIR)/libmy_malloc.so $(BUILDLIBDIR)/my_malloc.o
-	$(AR) rcs $(BUILDLIBDIR)/libmy_malloc.a $(BUILDLIBDIR)/my_malloc.o
+	$(CC)  -lpthread -shared -fPIC $(CFLAGS) $(INCLUDE) -o $(BUILDLIBDIR)/libmy_malloc.so $(LIBSRCDIR)/my_malloc.$(SRCEXT)
 
 test : lib
 	mkdir -p $(BUILDTESTDIR)
 	$(CC) $(INCLUDE) $(LIB) $(CFLAGS) $(TEST) -lmy_malloc -o $(BUILDTESTDIR)/test
-	LD_LIBRARY_PATH=$(BUILDLIBDIR)
+
 
 atom:
-	atom $(LIBSRCDIR)/$(LIBNAME).$(SRCEXT)	$(TEST)
+	atom $(LIBSRCDIR)/*.$(SRCEXT)	$(TEST)
 	atom include/*.h
 
 clean:

@@ -1,9 +1,13 @@
 #ifndef STRUCTURE_H
 #define STRUCTURE_H
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 #ifndef CONST
 #define BLOCK_MIN_SIZE 4096
-#define ADDITIONAL_SIZE 160
+#define ADDITIONAL_SIZE 0
 #endif
 
 struct chunk_t{
