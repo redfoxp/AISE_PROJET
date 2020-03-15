@@ -29,6 +29,9 @@ lib :
 test : lib
 	mkdir -p $(BUILDTESTDIR)
 	$(CC) $(INCLUDE) $(LIB) $(CFLAGS) $(TEST) -lmy_malloc -o $(BUILDTESTDIR)/test
+	$(CC) $(INCLUDE) $(CFLAGS) $(TEST) -o $(BUILDTESTDIR)/test_malloc_libc
+
+
 
 
 atom:

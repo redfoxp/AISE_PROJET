@@ -12,7 +12,6 @@ size_t cmptr_calloc;
 
 void *  malloc(size_t size) {
   pthread_mutex_lock(&mutex);
-
   if (size < 0) {
     //fprintf(stderr, "Unable to allocate negative or nul quantity \n");
     pthread_mutex_unlock(&mutex);
