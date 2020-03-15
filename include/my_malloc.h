@@ -32,8 +32,8 @@ void * calloc(size_t nmemb, size_t size);
 void status_print();
 void stats();
 
-//void stats() __attribute__((destructor));
-//void status_print() __attribute__((destructor));
+void stats() __attribute__((destructor));
+void status_print() __attribute__((destructor));
 
 
 
