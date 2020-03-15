@@ -13,6 +13,7 @@ Pour ajouter / enlever l'affichage : commentez ou de-commentez les
 fonctions destructeur :
 
 void stats() __attribute__((destructor));
+
 void status_print() __attribute__((destructor));
 
 dans include/my_malloc.h
