@@ -11,9 +11,10 @@
 #endif
 
 struct chunk_t{
-  int status;
-  struct block_t * block;
+  long allign;
   size_t size;
+  struct block_t * block;
+  int status;
   struct chunk_t * previous;
   struct chunk_t * next;
   struct chunk_t * next_free;
